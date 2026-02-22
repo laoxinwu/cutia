@@ -13,11 +13,21 @@ import {
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogBody,
+	DialogFooter,
+	DialogTitle,
+	DialogDescription,
+} from "@/components/ui/dialog";
+import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
 	Tooltip,
 	TooltipContent,
@@ -29,6 +39,7 @@ import { useEditor } from "@/hooks/use-editor";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useRevealItem } from "@/hooks/use-reveal-item";
 import { processMediaAssets } from "@/lib/media/processing";
+import { fetchRemoteMediaAsFile } from "@/lib/media/url-import";
 import {
 	buildImageElement,
 	buildUploadAudioElement,
@@ -46,6 +57,8 @@ import {
 	Image02Icon,
 	MusicNote03Icon,
 	Video01Icon,
+	Link04Icon,
+	ComputerIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
@@ -68,7 +81,11 @@ export function MediaView() {
 	);
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-	const processFiles = async ({ files }: { files: FileList }) => {
+	const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
+	const [urlInput, setUrlInput] = useState("");
+	const [isUrlImporting, setIsUrlImporting] = useState(false);
+
+	const processFiles = async ({ files }: { files: FileList | File[] }) => {
 		if (!files || files.length === 0) return;
 		if (!activeProject) {
 			toast.error("No active project");
@@ -95,6 +112,36 @@ export function MediaView() {
 		} finally {
 			setIsProcessing(false);
 			setProgress(0);
+		}
+	};
+
+	const handleUrlImport = async () => {
+		const trimmedUrl = urlInput.trim();
+		if (!trimmedUrl) return;
+
+		try {
+			new URL(trimmedUrl);
+		} catch {
+			toast.error("Please enter a valid URL");
+			return;
+		}
+
+		setIsUrlImporting(true);
+		try {
+			const file = await fetchRemoteMediaAsFile({ url: trimmedUrl });
+			await processFiles({ files: [file] });
+			setIsUrlDialogOpen(false);
+			setUrlInput("");
+			toast.success("Media imported successfully");
+		} catch (error) {
+			console.error("Error importing from URL:", error);
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Failed to import media from URL",
+			);
+		} finally {
+			setIsUrlImporting(false);
 		}
 	};
 
@@ -315,16 +362,35 @@ export function MediaView() {
 								</Tooltip>
 							</Tooltip>
 						</TooltipProvider>
-						<Button
-							variant="outline"
-							onClick={openFilePicker}
-							disabled={isProcessing}
-							size="sm"
-							className="items-center justify-center gap-1.5 ml-1.5 hover:bg-accent px-3"
-						>
-							<HugeiconsIcon icon={CloudUploadIcon} />
-							Import
-						</Button>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="outline"
+								disabled={isProcessing}
+								size="sm"
+								className="items-center justify-center gap-1.5 ml-1.5 hover:bg-accent px-3"
+							>
+								<HugeiconsIcon icon={CloudUploadIcon} />
+								Import
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							<DropdownMenuItem
+								onClick={openFilePicker}
+								className="gap-2"
+							>
+								<HugeiconsIcon icon={ComputerIcon} className="size-4" />
+								From Device
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => setIsUrlDialogOpen(true)}
+								className="gap-2"
+							>
+								<HugeiconsIcon icon={Link04Icon} className="size-4" />
+								From URL
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
 					</div>
 				</div>
 
@@ -359,6 +425,48 @@ export function MediaView() {
 					</div>
 				</div>
 			</div>
+
+			<Dialog open={isUrlDialogOpen} onOpenChange={setIsUrlDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Import from URL</DialogTitle>
+						<DialogDescription>
+							Enter a URL to import a remote media file (image, video, or
+							audio).
+						</DialogDescription>
+					</DialogHeader>
+					<DialogBody>
+						<Input
+							placeholder="https://example.com/media.mp4"
+							value={urlInput}
+							onChange={(event) => setUrlInput(event.target.value)}
+							onKeyDown={(event) => {
+								if (event.key === "Enter" && !isUrlImporting) {
+									handleUrlImport();
+								}
+							}}
+							disabled={isUrlImporting}
+						/>
+					</DialogBody>
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setIsUrlDialogOpen(false)}
+							disabled={isUrlImporting}
+						>
+							Cancel
+						</Button>
+						<Button
+							type="button"
+							onClick={handleUrlImport}
+							disabled={isUrlImporting || !urlInput.trim()}
+						>
+							{isUrlImporting ? "Importing..." : "Import"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</>
 	);
 }
