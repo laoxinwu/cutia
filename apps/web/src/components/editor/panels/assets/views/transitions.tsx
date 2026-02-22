@@ -286,9 +286,9 @@ function applyTransitionToAdjacentPairs({
 		);
 	} else {
 		toast.success(
-			t("Applied {{type}} to {{count}} junction(s)", {
+			t("Applied {{type}} to {{num}} junction(s)", {
 				type: transitionType,
-				count: applied,
+				num: applied,
 			}),
 		);
 	}

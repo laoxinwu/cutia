@@ -219,8 +219,8 @@ export const useAIImageGenerationStore = create<AIImageGenerationState>()(
 				}));
 
 				toast.success(
-					i18next.t("Generated {{count}} image(s)", {
-						count: results.length,
+					i18next.t("Generated {{num}} image(s)", {
+						num: results.length,
 					}),
 				);
 

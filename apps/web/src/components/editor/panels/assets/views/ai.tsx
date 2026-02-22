@@ -158,8 +158,8 @@ function AIImageView() {
 			{generatedImages.length > 0 && (
 				<div className="flex flex-col gap-2">
 					<span className="text-muted-foreground text-xs font-medium">
-						{t("Generated Images ({{count}})", {
-							count: generatedImages.length,
+						{t("Generated Images ({{num}})", {
+							num: generatedImages.length,
 						})}
 					</span>
 					<div className="grid grid-cols-2 gap-2">

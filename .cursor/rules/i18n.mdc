@@ -32,7 +32,6 @@ Interpolation:
 
 ```typescript
 t("Hello {{name}}", { name: user.name });
-t("Generated {{count}} image(s)", { count: results.length });
 ```
 
 ### Outside React (stores, utilities, toast)

@@ -41,7 +41,7 @@ export function DeleteProjectDialog({
 						{singleName ? (
 							t('Delete "{{name}}"?' , { name: singleName })
 						) : (
-							t('Delete {{count}} projects?', { count })
+							t("Delete {{num}} projects?", { num: count })
 						)}
 					</DialogTitle>
 				</DialogHeader>
@@ -51,7 +51,10 @@ export function DeleteProjectDialog({
 						<AlertDescription>
 							{singleName
 								? t('This will permanently delete "{{name}}" and all associated files.', { name: singleName })
-								: t('This will permanently delete {{count}} projects and all associated files.', { count })}
+								: t(
+										"This will permanently delete {{num}} projects and all associated files.",
+										{ num: count },
+									)}
 						</AlertDescription>
 					</Alert>
 					<div className="flex flex-col gap-3">

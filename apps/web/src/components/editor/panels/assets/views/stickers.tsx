@@ -405,8 +405,8 @@ function StickersContentView({ category }: { category: StickerCategory }) {
 									<>
 										<div className="mb-3 flex items-center justify-between">
 											<span className="text-muted-foreground text-sm">
-												{t("{{count}} results", {
-													count: searchResults.total,
+												{t("{{num}} results", {
+													num: searchResults.total,
 												})}
 											</span>
 										</div>

@@ -434,8 +434,8 @@ function SavedSoundsView() {
 		<div className="mt-1 flex h-full flex-col gap-5">
 			<div className="flex items-center justify-between">
 				<p className="text-muted-foreground text-sm">
-					{t("{{count}} saved {{noun}}", {
-						count: savedSounds.length,
+					{t("{{num}} saved {{noun}}", {
+						num: savedSounds.length,
 						noun:
 							savedSounds.length === 1 ? t("sound") : t("sounds"),
 					})}
@@ -455,8 +455,8 @@ function SavedSoundsView() {
 							<DialogTitle>{t("Clear all saved sounds?")}</DialogTitle>
 							<DialogDescription>
 								{t(
-									"This will permanently remove all {{count}} saved sounds from your collection. This action cannot be undone.",
-									{ count: savedSounds.length },
+									"This will permanently remove all {{num}} saved sounds from your collection. This action cannot be undone.",
+									{ num: savedSounds.length },
 								)}
 							</DialogDescription>
 						</DialogHeader>

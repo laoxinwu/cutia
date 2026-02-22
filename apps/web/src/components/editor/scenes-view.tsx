@@ -98,7 +98,11 @@ export function ScenesView({ children }: { children: React.ReactNode }) {
 			<SheetContent>
 				<SheetHeader>
 					<SheetTitle>
-						{isSelectMode ? t('Select scenes ({{count}})', { count: selectedScenes.size }) : t('Scenes')}
+						{isSelectMode
+							? t("Select scenes ({{num}})", {
+									num: selectedScenes.size,
+								})
+							: t("Scenes")}
 					</SheetTitle>
 					<SheetDescription>
 						{isSelectMode
@@ -200,7 +204,12 @@ function DeleteDialog({
 				<DialogHeader>
 					<DialogTitle>{t('Delete Scenes')}</DialogTitle>
 					<DialogDescription>
-						{t('Are you sure you want to delete {{count}} scene(s)? This action cannot be undone.', { count })}
+						{t(
+							"Are you sure you want to delete {{num}} scene(s)? This action cannot be undone.",
+							{
+								num: count,
+							},
+						)}
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter>
