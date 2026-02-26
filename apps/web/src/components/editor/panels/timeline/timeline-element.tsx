@@ -302,7 +302,6 @@ function ElementInner({
 						element={element}
 						track={track}
 						zoomLevel={zoomLevel}
-						isSelected={isSelected}
 						mediaAssets={mediaAssets}
 					/>
 				</div>
@@ -327,6 +326,7 @@ function ElementInner({
 
 			{isSelected && (
 				<>
+					<div className="border-primary pointer-events-none absolute inset-0 z-20 rounded-[0.5rem] border-2" />
 					<ResizeHandle
 						side="left"
 						elementId={element.id}
@@ -373,13 +373,11 @@ function ElementContent({
 	element,
 	track,
 	zoomLevel,
-	isSelected,
 	mediaAssets,
 }: {
 	element: TimelineElementType;
 	track: TimelineTrack;
 	zoomLevel: number;
-	isSelected: boolean;
 	mediaAssets: MediaAsset[];
 }) {
 	if (element.type === "text") {
@@ -452,49 +450,36 @@ function ElementContent({
 			element.duration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel;
 
 		return (
-			<div className="flex size-full items-center justify-center">
-				<div
-					className={`relative size-full ${isSelected ? "bg-primary" : "bg-transparent"}`}
-				>
-					<VideoThumbnailStrip
-						mediaId={element.mediaId}
-						file={mediaAsset.file}
-						thumbnailUrl={mediaAsset.thumbnailUrl}
-						trimStart={element.trimStart}
-						duration={element.duration}
-						elementWidth={elementWidth}
-						trackHeight={trackHeight}
-						zoomLevel={zoomLevel}
-						fps={mediaAsset.fps ?? 30}
-						mediaWidth={mediaAsset.width ?? 1920}
-						mediaHeight={mediaAsset.height ?? 1080}
-						isSelected={isSelected}
-					/>
-				</div>
+			<div className="relative size-full">
+				<VideoThumbnailStrip
+					mediaId={element.mediaId}
+					file={mediaAsset.file}
+					thumbnailUrl={mediaAsset.thumbnailUrl}
+					trimStart={element.trimStart}
+					duration={element.duration}
+					elementWidth={elementWidth}
+					trackHeight={trackHeight}
+					zoomLevel={zoomLevel}
+					fps={mediaAsset.fps ?? 30}
+					mediaWidth={mediaAsset.width ?? 1920}
+					mediaHeight={mediaAsset.height ?? 1080}
+				/>
 			</div>
 		);
 	}
 
 	if (mediaAsset.type === "image" && mediaAsset.url) {
 		return (
-			<div className="flex size-full items-center justify-center">
-				<div
-					className={`relative size-full ${isSelected ? "bg-primary" : "bg-transparent"}`}
-				>
-					<div
-						className="absolute right-0 left-0"
-						style={{
-							backgroundImage: `url(${mediaAsset.url})`,
-							backgroundRepeat: "no-repeat",
-							backgroundSize: "cover",
-							backgroundPosition: "center",
-							pointerEvents: "none",
-							top: isSelected ? "0.25rem" : "0rem",
-							bottom: isSelected ? "0.25rem" : "0rem",
-						}}
-					/>
-				</div>
-			</div>
+			<div
+				className="absolute inset-0"
+				style={{
+					backgroundImage: `url(${mediaAsset.url})`,
+					backgroundRepeat: "no-repeat",
+					backgroundSize: "cover",
+					backgroundPosition: "center",
+					pointerEvents: "none",
+				}}
+			/>
 		);
 	}
 

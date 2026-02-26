@@ -20,7 +20,6 @@ interface VideoThumbnailStripProps {
 	fps: number;
 	mediaWidth: number;
 	mediaHeight: number;
-	isSelected: boolean;
 }
 
 function drawCoverCrop({
@@ -100,7 +99,6 @@ export function VideoThumbnailStrip({
 	fps,
 	mediaWidth,
 	mediaHeight,
-	isSelected,
 }: VideoThumbnailStripProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const renderIdRef = useRef(0);
@@ -110,8 +108,6 @@ export function VideoThumbnailStrip({
 
 	const tileAspect = mediaWidth / mediaHeight;
 	const tileWidth = Math.round(trackHeight * tileAspect);
-	const drawHeight = isSelected ? trackHeight - 8 : trackHeight;
-	const drawOffsetY = isSelected ? 4 : 0;
 
 	const fallbackStyle = useMemo(
 		() =>
@@ -119,11 +115,11 @@ export function VideoThumbnailStrip({
 				? {
 						backgroundImage: `url(${thumbnailUrl})`,
 						backgroundRepeat: "repeat-x" as const,
-						backgroundSize: `${tileWidth}px ${drawHeight}px`,
-						backgroundPosition: `left ${drawOffsetY}px`,
+						backgroundSize: `${tileWidth}px ${trackHeight}px`,
+						backgroundPosition: "left top",
 					}
 				: undefined,
-		[thumbnailUrl, tileWidth, drawHeight, drawOffsetY],
+		[thumbnailUrl, tileWidth, trackHeight],
 	);
 
 	useLayoutEffect(() => {
@@ -200,16 +196,16 @@ export function VideoThumbnailStrip({
 						time: frameTime,
 					});
 
-				if (image) {
-					drawCoverCrop({
-						ctx,
-						image,
-						destX,
-						destY: drawOffsetY,
-						destWidth: tileWidth,
-						destHeight: drawHeight,
-					});
-				}
+			if (image) {
+				drawCoverCrop({
+					ctx,
+					image,
+					destX,
+					destY: 0,
+					destWidth: tileWidth,
+					destHeight: trackHeight,
+				});
+			}
 
 				if (!exact) {
 					needsAsyncLoad.push({ index: i, time: frameTime });
@@ -239,14 +235,14 @@ export function VideoThumbnailStrip({
 								return;
 
 							const destX = index * tileWidth - renderStart;
-							drawCoverCrop({
-								ctx,
-								image: bitmap,
-								destX,
-								destY: drawOffsetY,
-								destWidth: tileWidth,
-								destHeight: drawHeight,
-							});
+						drawCoverCrop({
+							ctx,
+							image: bitmap,
+							destX,
+							destY: 0,
+							destWidth: tileWidth,
+							destHeight: trackHeight,
+						});
 						},
 					});
 				}, ASYNC_LOAD_DEBOUNCE_MS);
@@ -279,8 +275,6 @@ export function VideoThumbnailStrip({
 		zoomLevel,
 		fps,
 		tileWidth,
-		drawHeight,
-		drawOffsetY,
 	]);
 
 	return (
