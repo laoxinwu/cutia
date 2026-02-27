@@ -11,6 +11,7 @@ import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
+	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
@@ -552,6 +553,15 @@ function MediaItemWithContextMenu({
 				<ContextMenuItem onClick={() => onExportClip({ item })}>
 					{t("Export clips")}
 				</ContextMenuItem>
+				<ContextMenuItem
+					onClick={() => {
+						navigator.clipboard.writeText(item.id);
+						toast.success(t("Media ID copied"));
+					}}
+				>
+					{t("Copy Media ID")}
+				</ContextMenuItem>
+				<ContextMenuSeparator />
 				<ContextMenuItem
 					variant="destructive"
 					onClick={(event) => onRemove({ event, id: item.id })}
