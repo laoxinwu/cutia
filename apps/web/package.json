@@ -16,7 +16,8 @@
     "db:push:prod": "cross-env NODE_ENV=production drizzle-kit push",
     "translation:extract": "i18next-toolkit extract",
     "translation:scan": "i18next-toolkit scan",
-    "translation:translate": "i18next-toolkit translate"
+    "translation:translate": "i18next-toolkit translate",
+    "test": "bun test"
   },
   "dependencies": {
     "@cutia/env": "workspace:*",

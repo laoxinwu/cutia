@@ -11,7 +11,11 @@ import {
 import { useState, useRef } from "react";
 import { extractTimelineAudio } from "@/lib/media/mediabunny";
 import { useEditor } from "@/hooks/use-editor";
-import { TRANSCRIPTION_LANGUAGES } from "@/constants/transcription-constants";
+import {
+	TRANSCRIPTION_LANGUAGES,
+	TRANSCRIPTION_MODELS,
+	DEFAULT_TRANSCRIPTION_MODEL,
+} from "@/constants/transcription-constants";
 import {
 	SUBTITLE_TEMPLATES,
 	createSubtitleFromTemplate,
@@ -19,6 +23,7 @@ import {
 } from "@/constants/subtitle-constants";
 import type {
 	TranscriptionLanguage,
+	TranscriptionModelId,
 	TranscriptionProgress,
 } from "@/types/transcription";
 import { transcriptionService } from "@/services/transcription/service";
@@ -32,6 +37,8 @@ export function Captions() {
 	const { t } = useTranslation();
 	const [selectedLanguage, setSelectedLanguage] =
 		useState<TranscriptionLanguage>("auto");
+	const [selectedModelId, setSelectedModelId] =
+		useState<TranscriptionModelId>(DEFAULT_TRANSCRIPTION_MODEL);
 	const [selectedTemplate, setSelectedTemplate] = useState<SubtitleTemplate>(
 		SUBTITLE_TEMPLATES[0],
 	);
@@ -82,6 +89,7 @@ export function Captions() {
 			const result = await transcriptionService.transcribe({
 				audioData: samples,
 				language: selectedLanguage,
+				modelId: selectedModelId,
 				onProgress: handleProgress,
 			});
 
@@ -155,6 +163,32 @@ export function Captions() {
 			className="flex h-full flex-col justify-between"
 		>
 			<div className="flex flex-col gap-5">
+				<div className="flex flex-col gap-3">
+					<Label>{t("Model")}</Label>
+					<Select
+						value={selectedModelId}
+						onValueChange={(value) =>
+							setSelectedModelId(value as TranscriptionModelId)
+						}
+						disabled={isProcessing}
+					>
+						<SelectTrigger>
+							<SelectValue placeholder={t("Select a model")} />
+						</SelectTrigger>
+						<SelectContent>
+							{TRANSCRIPTION_MODELS.map((model) => (
+								<SelectItem key={model.id} value={model.id}>
+									{model.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<p className="text-muted-foreground text-xs">
+						{TRANSCRIPTION_MODELS.find((m) => m.id === selectedModelId)
+							?.description ?? ""}
+					</p>
+				</div>
+
 				<div className="flex flex-col gap-3">
 					<Label>{t("Language")}</Label>
 					<Select
