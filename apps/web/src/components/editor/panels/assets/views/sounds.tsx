@@ -224,7 +224,8 @@ function SoundEffectsView() {
 			audio.addEventListener("error", () => {
 				setPlayingId(null);
 			});
-			audio.play().catch((error) => {
+			audio.play().catch((error: DOMException) => {
+				if (error.name === "AbortError") return;
 				console.error("Failed to play sound preview:", error);
 				setPlayingId(null);
 			});
@@ -356,7 +357,8 @@ function SavedSoundsView() {
 			audio.addEventListener("error", () => {
 				setPlayingId(null);
 			});
-			audio.play().catch((error) => {
+			audio.play().catch((error: DOMException) => {
+				if (error.name === "AbortError") return;
 				console.error("Failed to play sound preview:", error);
 				setPlayingId(null);
 			});
