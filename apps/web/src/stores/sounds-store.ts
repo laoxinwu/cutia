@@ -216,7 +216,6 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
 		try {
 			const editor = EditorCore.getInstance();
 			const currentTime = editor.playback.getCurrentTime();
-			const tracks = editor.timeline.getTracks();
 
 			const response = await fetch(audioUrl);
 			if (!response.ok)
@@ -225,15 +224,6 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
 			const arrayBuffer = await response.arrayBuffer();
 			const audioContext = new AudioContext();
 			const buffer = await audioContext.decodeAudioData(arrayBuffer);
-
-			const audioTrack = tracks.find((t) => t.type === "audio");
-			let trackId: string;
-
-			if (audioTrack) {
-				trackId = audioTrack.id;
-			} else {
-				trackId = editor.timeline.addTrack({ type: "audio" });
-			}
 
 			const element = buildLibraryAudioElement({
 				sourceUrl: audioUrl,
@@ -244,7 +234,7 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
 			});
 
 			editor.timeline.insertElement({
-				placement: { mode: "explicit", trackId },
+				placement: { mode: "auto", trackType: "audio" },
 				element,
 			});
 			return true;
