@@ -53,7 +53,7 @@ export const useAgentStore = create<AgentState>()(
 				model: "",
 			},
 			autoMode: false,
-			isOpen: false,
+			isOpen: true,
 			expertRole: DEFAULT_EXPERT_ROLE,
 			messages: [],
 			status: "idle" as AgentStatus,
@@ -157,10 +157,7 @@ export const useAgentStore = create<AgentState>()(
 						streamingContent: "",
 					});
 				} catch (error) {
-					if (
-						error instanceof Error &&
-						error.name === "AbortError"
-					) {
+					if (error instanceof Error && error.name === "AbortError") {
 						set({ status: "idle", streamingContent: "" });
 						return;
 					}
