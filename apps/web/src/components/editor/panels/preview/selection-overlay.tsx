@@ -163,7 +163,12 @@ function computeStickerBounds({
 	canvasHeight: number;
 	displayScale: number;
 }): ElementBounds {
-	const stickerSize = 64 * element.transform.scale;
+	const stickerSource = 200;
+	const containScale = Math.min(
+		canvasWidth / stickerSource,
+		canvasHeight / stickerSource,
+	);
+	const stickerSize = stickerSource * containScale * element.transform.scale;
 
 	const centerX = canvasWidth / 2 + element.transform.position.x;
 	const centerY = canvasHeight / 2 + element.transform.position.y;
