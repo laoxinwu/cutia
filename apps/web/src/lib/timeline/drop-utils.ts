@@ -65,6 +65,49 @@ function getMainTrackIndex({ tracks }: { tracks: TimelineTrack[] }): number {
 	return tracks.findIndex((track) => isMainTrack(track));
 }
 
+function findBestCompatibleTrack({
+	elementType,
+	tracks,
+	xPosition,
+	elementDuration,
+	excludeElementId,
+}: {
+	elementType: ElementType;
+	tracks: TimelineTrack[];
+	xPosition: number;
+	elementDuration: number;
+	excludeElementId?: string;
+}): number | null {
+	const endTime = xPosition + elementDuration;
+
+	// video/image → prefer main track first
+	if (elementType === "video" || elementType === "image") {
+		const mainIdx = getMainTrackIndex({ tracks });
+		if (mainIdx >= 0) {
+			const hasOverlap = wouldElementOverlap({
+				elements: tracks[mainIdx].elements,
+				startTime: xPosition,
+				endTime,
+				excludeElementId,
+			});
+			if (!hasOverlap) return mainIdx;
+		}
+	}
+
+	for (let i = 0; i < tracks.length; i++) {
+		if (!isCompatible({ elementType, trackType: tracks[i].type })) continue;
+		const hasOverlap = wouldElementOverlap({
+			elements: tracks[i].elements,
+			startTime: xPosition,
+			endTime,
+			excludeElementId,
+		});
+		if (!hasOverlap) return i;
+	}
+
+	return null;
+}
+
 function findInsertIndex({
 	elementType,
 	tracks,
@@ -138,6 +181,31 @@ export function computeDropTarget({
 	const trackAtMouse = getTrackAtY({ mouseY, tracks, verticalDragDirection });
 
 	if (!trackAtMouse) {
+		const compatibleIndex = findBestCompatibleTrack({
+			elementType,
+			tracks,
+			xPosition,
+			elementDuration,
+			excludeElementId,
+		});
+
+		if (compatibleIndex !== null) {
+			const targetTrack = tracks[compatibleIndex];
+			const adjustedXPosition = enforceMainTrackStart({
+				tracks,
+				targetTrackId: targetTrack.id,
+				requestedStartTime: xPosition,
+				excludeElementId,
+			});
+
+			return {
+				trackIndex: compatibleIndex,
+				isNewTrack: false,
+				insertPosition: null,
+				xPosition: adjustedXPosition,
+			};
+		}
+
 		const isAboveAllTracks = mouseY < 0;
 
 		if (elementType === "audio") {
@@ -197,6 +265,31 @@ export function computeDropTarget({
 
 		return {
 			trackIndex,
+			isNewTrack: false,
+			insertPosition: null,
+			xPosition: adjustedXPosition,
+		};
+	}
+
+	const fallbackIndex = findBestCompatibleTrack({
+		elementType,
+		tracks,
+		xPosition,
+		elementDuration,
+		excludeElementId,
+	});
+
+	if (fallbackIndex !== null) {
+		const fallbackTrack = tracks[fallbackIndex];
+		const adjustedXPosition = enforceMainTrackStart({
+			tracks,
+			targetTrackId: fallbackTrack.id,
+			requestedStartTime: xPosition,
+			excludeElementId,
+		});
+
+		return {
+			trackIndex: fallbackIndex,
 			isNewTrack: false,
 			insertPosition: null,
 			xPosition: adjustedXPosition,
