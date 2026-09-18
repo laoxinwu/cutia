@@ -8,6 +8,7 @@ import { useEditor } from "../use-editor";
 import { useElementSelection } from "../timeline/element/use-element-selection";
 import { getElementsAtTime } from "@/lib/timeline";
 import { generateAndInsertSpeech } from "@/lib/tts/service";
+import { importCaptions } from "@/lib/transcription/import";
 import { toast } from "sonner";
 import { i18next } from "@/lib/i18n";
 import { DEFAULT_EXPORT_OPTIONS } from "@/constants/export-constants";
@@ -33,6 +34,7 @@ export function useEditorActions() {
 	const { selectedElements, setElementSelection } = useElementSelection();
 	const { clipboard, setClipboard, toggleSnapping } = useTimelineStore();
 	const freezeFrameInFlight = useRef(false);
+	const captionImportInFlight = useRef(false);
 
 	useActionHandler(
 		"toggle-play",
@@ -545,6 +547,41 @@ export function useEditorActions() {
 		"toggle-snapping",
 		() => {
 			toggleSnapping();
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"import-captions",
+		(args) => {
+			if (!args) return;
+			if (captionImportInFlight.current) {
+				args.onComplete?.(
+					new Error(i18next.t("A caption import is already in progress")),
+				);
+				return;
+			}
+			captionImportInFlight.current = true;
+			void importCaptions({
+				editor,
+				...args,
+				startTime: editor.playback.getCurrentTime(),
+			}).then(
+				() => {
+					captionImportInFlight.current = false;
+					toast.success(i18next.t("Captions imported"));
+					args.onComplete?.();
+				},
+				(error: unknown) => {
+					captionImportInFlight.current = false;
+					const failure =
+						error instanceof Error
+							? error
+							: new Error(i18next.t("An unexpected error occurred"));
+					toast.error(failure.message);
+					args.onComplete?.(failure);
+				},
+			);
 		},
 		undefined,
 	);

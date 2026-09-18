@@ -32,9 +32,17 @@ import { buildCaptionChunks } from "@/lib/transcription/caption";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { invokeAction } from "@/lib/actions";
+import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
 
 export function Captions() {
 	const { t } = useTranslation();
+	const [activeTab, setActiveTab] = useState("transcription");
+	const [captionText, setCaptionText] = useState("");
+	const [generateSpeech, setGenerateSpeech] = useState(false);
 	const [selectedLanguage, setSelectedLanguage] =
 		useLocalStorage<TranscriptionLanguage>({
 			key: "editor-caption-language",
@@ -148,6 +156,33 @@ export function Captions() {
 		}
 	};
 
+	const handleImport = () => {
+		setIsProcessing(true);
+		setError(null);
+		setProgressValue(0);
+		setProcessingStep(t("Importing captions..."));
+		invokeAction("import-captions", {
+			text: captionText,
+			templateId: selectedTemplate.templateId,
+			generateSpeech,
+			onProgress: (completed, total) => {
+				setProgressValue((completed / total) * 100);
+				setProcessingStep(
+					t("Generating speech {{current}}/{{total}}...", {
+						current: Math.min(completed + 1, total),
+						total,
+					}),
+				);
+			},
+			onComplete: (failure) => {
+				setError(failure?.message ?? null);
+				setIsProcessing(false);
+				setProcessingStep("");
+				setProgressValue(0);
+			},
+		});
+	};
+
 	const handleLanguageChange = ({ value }: { value: string }) => {
 		if (value === "auto") {
 			setSelectedLanguage({ value: "auto" });
@@ -162,9 +197,7 @@ export function Captions() {
 	};
 
 	const handleTemplateChange = ({ value }: { value: string }) => {
-		const template = SUBTITLE_TEMPLATES.find(
-			(t) => t.templateId === value,
-		);
+		const template = SUBTITLE_TEMPLATES.find((t) => t.templateId === value);
 		if (template) {
 			setSelectedTemplateId({ value: template.templateId });
 		}
@@ -173,62 +206,119 @@ export function Captions() {
 	return (
 		<BaseView
 			ref={containerRef}
-			className="flex h-full flex-col justify-between"
+			className="flex h-full flex-col justify-between gap-5"
 		>
 			<div className="flex flex-col gap-5">
-				<div className="flex flex-col gap-3">
-					<Label>{t("Model")}</Label>
-					<Select
-						value={selectedModelId}
-					onValueChange={(value) =>
-						setSelectedModelId({
-							value: value as TranscriptionModelId,
-						})
-					}
-						disabled={isProcessing}
-					>
-						<SelectTrigger>
-							<SelectValue placeholder={t("Select a model")} />
-						</SelectTrigger>
-						<SelectContent>
-							{TRANSCRIPTION_MODELS.map((model) => (
-								<SelectItem key={model.id} value={model.id}>
-									{model.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<p className="text-muted-foreground text-xs">
-						{TRANSCRIPTION_MODELS.find((m) => m.id === selectedModelId)
-							?.description ?? ""}
-					</p>
-				</div>
+				<Tabs
+					value={activeTab}
+					onValueChange={(value) => {
+						setActiveTab(value);
+						setError(null);
+					}}
+				>
+					<TabsList>
+						<TabsTrigger value="transcription" disabled={isProcessing}>
+							{t("Transcription")}
+						</TabsTrigger>
+						<TabsTrigger value="import" disabled={isProcessing}>
+							{t("Import")}
+						</TabsTrigger>
+					</TabsList>
+					<TabsContent value="import" className="mt-5 space-y-3">
+						<Label htmlFor="caption-import-text">{t("Subtitles")}</Label>
+						<Textarea
+							id="caption-import-text"
+							className="min-h-60"
+							rows={10}
+							placeholder={t("Enter one subtitle per line")}
+							value={captionText}
+							onChange={(event) => setCaptionText(event.target.value)}
+							disabled={isProcessing}
+						/>
+						<div className="flex items-center gap-2">
+							<Checkbox
+								id="caption-import-speech"
+								checked={generateSpeech}
+								onCheckedChange={(checked) =>
+									setGenerateSpeech(checked === true)
+								}
+								disabled={isProcessing}
+							/>
+							<Label htmlFor="caption-import-speech">
+								{t("Generate Speech")}
+							</Label>
+						</div>
+						<p className="text-muted-foreground text-xs">
+							{generateSpeech
+								? t(
+										"Each line gets matching speech. Subtitles and audio start at the playhead.",
+									)
+								: t(
+										"Subtitles start at the playhead, {{seconds}} seconds per line. Blank lines are ignored.",
+										{
+											seconds: TIMELINE_CONSTANTS.DEFAULT_ELEMENT_DURATION,
+										},
+									)}
+						</p>
+					</TabsContent>
+					<TabsContent value="transcription" className="mt-5 space-y-5">
+						<div className="flex flex-col gap-3">
+							<Label>{t("Model")}</Label>
+							<Select
+								value={selectedModelId}
+								onValueChange={(value) =>
+									setSelectedModelId({
+										value: value as TranscriptionModelId,
+									})
+								}
+								disabled={isProcessing}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder={t("Select a model")} />
+								</SelectTrigger>
+								<SelectContent>
+									{TRANSCRIPTION_MODELS.map((model) => (
+										<SelectItem key={model.id} value={model.id}>
+											{model.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<p className="text-muted-foreground text-xs">
+								{TRANSCRIPTION_MODELS.find((m) => m.id === selectedModelId)
+									?.description ?? ""}
+							</p>
+						</div>
 
-				<div className="flex flex-col gap-3">
-					<Label>{t("Language")}</Label>
-					<Select
-						value={selectedLanguage}
-						onValueChange={(value) => handleLanguageChange({ value })}
-					>
-						<SelectTrigger>
-							<SelectValue placeholder={t("Select a language")} />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="auto">{t("Auto detect")}</SelectItem>
-							{TRANSCRIPTION_LANGUAGES.map((language) => (
-								<SelectItem key={language.code} value={language.code}>
-									{language.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
+						<div className="flex flex-col gap-3">
+							<Label>{t("Language")}</Label>
+							<Select
+								value={selectedLanguage}
+								onValueChange={(value) => handleLanguageChange({ value })}
+								disabled={isProcessing}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder={t("Select a language")} />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="auto">{t("Auto detect")}</SelectItem>
+									{TRANSCRIPTION_LANGUAGES.map((language) => (
+										<SelectItem key={language.code} value={language.code}>
+											{language.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					</TabsContent>
+				</Tabs>
 
 				<div className="flex flex-col gap-3">
 					<Label>{t("Subtitle Style")}</Label>
 					<Select
 						value={selectedTemplate.templateId}
 						onValueChange={(value) => handleTemplateChange({ value })}
+						disabled={isProcessing}
 					>
 						<SelectTrigger>
 							<SelectValue placeholder={t("Select a style")} />
@@ -289,11 +379,19 @@ export function Captions() {
 				<Button
 					className="w-full"
 					type="button"
-					onClick={handleGenerateTranscript}
-					disabled={isProcessing}
+					onClick={
+						activeTab === "import" ? handleImport : handleGenerateTranscript
+					}
+					disabled={
+						isProcessing || (activeTab === "import" && !captionText.trim())
+					}
 				>
 					{isProcessing && <Spinner className="mr-1" />}
-					{isProcessing ? t("Processing...") : t("Generate transcript")}
+					{isProcessing
+						? t("Processing...")
+						: activeTab === "import"
+							? t("Import captions")
+							: t("Generate transcript")}
 				</Button>
 			</div>
 		</BaseView>

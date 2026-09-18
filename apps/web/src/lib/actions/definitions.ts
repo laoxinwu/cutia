@@ -140,6 +140,10 @@ export const ACTIONS = {
 		description: "Convert text to speech",
 		category: "editing",
 	},
+	"import-captions": {
+		description: "Import captions",
+		category: "editing",
+	},
 	"toggle-bookmark": {
 		description: "Toggle bookmark at playhead",
 		category: "timeline",

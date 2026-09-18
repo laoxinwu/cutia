@@ -39,13 +39,12 @@ export async function generateSpeechFromText({
 	const blob = new Blob([arrayBuffer], { type: "audio/mpeg" });
 
 	const audioContext = new AudioContext();
-	const buffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
-
-	return {
-		duration: buffer.duration,
-		buffer,
-		blob,
-	};
+	try {
+		const buffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+		return { duration: buffer.duration, buffer, blob };
+	} finally {
+		await audioContext.close();
+	}
 }
 
 function findAvailableAudioTrack({

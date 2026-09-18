@@ -9,6 +9,15 @@ export type TActionArgsMap = {
 	"jump-forward": { seconds: number } | undefined;
 	"jump-backward": { seconds: number } | undefined;
 	"freeze-frame": { trackId: string; elementId: string } | undefined;
+	"import-captions":
+		| {
+				text: string;
+				templateId: string;
+				generateSpeech: boolean;
+				onProgress?: (completed: number, total: number) => void;
+				onComplete?: (error?: Error) => void;
+		  }
+		| undefined;
 };
 
 type TKeysWithValueUndefined<T> = {
