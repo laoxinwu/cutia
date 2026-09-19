@@ -368,6 +368,9 @@ function ProjectCaptions({ projectId }: { projectId: string }) {
 								fontWeight: selectedTemplate.fontWeight,
 								fontStyle: selectedTemplate.fontStyle,
 								textDecoration: selectedTemplate.textDecoration,
+								WebkitTextStroke: selectedTemplate.stroke
+									? `${Math.max(selectedTemplate.stroke.width * 0.5, 0.5)}px ${selectedTemplate.stroke.color}`
+									: undefined,
 								padding: "2px 6px",
 								borderRadius: 2,
 							}}

@@ -37,6 +37,7 @@ export const SUBTITLE_TEMPLATES: SubtitleTemplate[] = [
 		fontFamily: "Inter",
 		color: "#ffffff",
 		backgroundColor: "transparent",
+		stroke: { color: "#000000", width: 3 },
 		textAlign: "center",
 		fontWeight: "bold",
 		fontStyle: "normal",
