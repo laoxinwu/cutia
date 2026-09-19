@@ -1,5 +1,8 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ColorPickerIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { useTranslation } from "@i18next-toolkit/nextjs-approuter";
 import { cn } from "@/utils/ui";
 import { Input } from "./input";
 
@@ -10,6 +13,11 @@ interface ColorPickerProps {
 	className?: string;
 	containerRef?: React.RefObject<HTMLDivElement | null>;
 }
+
+// EyeDropper API is Chromium-only and not in lib.dom yet
+type EyeDropperWindow = Window & {
+	EyeDropper?: new () => { open: () => Promise<{ sRGBHex: string }> };
+};
 
 const hexToHsv = (hex: string) => {
 	const r = parseInt(hex.slice(0, 2), 16) / 255;
@@ -87,7 +95,8 @@ const hsvToHex = (h: number, s: number, v: number) => {
 };
 
 const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
-	({ className, value = "FFFFFF", onChange, onChangeEnd, containerRef, ...props }, ref) => {
+	({ className, value: rawValue = "FFFFFF", onChange, onChangeEnd, containerRef, ...props }, ref) => {
+		const value = rawValue.replace("#", "");
 		const [isOpen, setIsOpen] = useState(false);
 		const [isDragging, setIsDragging] = useState<"saturation" | "hue" | null>(
 			null,
@@ -97,6 +106,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 			bottom: 0,
 		});
 		const [internalHue, setInternalHue] = useState(0);
+		const { t } = useTranslation();
 		const [inputValue, setInputValue] = useState(value);
 
 		const pickerRef = useRef<HTMLDivElement>(null);
@@ -215,6 +225,19 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 			}
 		};
 
+		const handleEyeDropper = async () => {
+			const EyeDropper = (window as EyeDropperWindow).EyeDropper;
+			if (!EyeDropper) return;
+			try {
+				const { sRGBHex } = await new EyeDropper().open();
+				const hex = sRGBHex.replace("#", "").toUpperCase();
+				onChange?.(hex);
+				onChangeEnd?.(hex);
+			} catch {
+				// user dismissed the eyedropper with Esc
+			}
+		};
+
 		const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 			const hex = e.target.value.replace("#", "");
 			setInputValue(hex);
@@ -256,12 +279,12 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 						style={{ backgroundColor: `#${value}` }}
 						type="button"
 						onClick={() => {
-							if (!isOpen && triggerRef.current && containerRef?.current) {
-								const containerRect =
-									containerRef.current.getBoundingClientRect();
+							const anchor = containerRef?.current ?? triggerRef.current;
+							if (!isOpen && anchor) {
+								const anchorRect = anchor.getBoundingClientRect();
 								setPickerPosition({
-									right: window.innerWidth - containerRect.left - 8,
-									bottom: window.innerHeight - containerRect.bottom,
+									right: window.innerWidth - anchorRect.left + 8,
+									bottom: window.innerHeight - anchorRect.bottom + 8,
 								});
 							}
 							setIsOpen(!isOpen);
@@ -284,7 +307,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 					createPortal(
 						<div
 							ref={pickerRef}
-							className="bg-popover border-border fixed z-50 rounded-lg border p-4 shadow-lg select-none"
+							className="bg-popover border-border fixed z-50 flex w-60 flex-col gap-3 rounded-xl border p-3 shadow-xl select-none"
 							style={{
 								right: pickerPosition.right,
 								bottom: pickerPosition.bottom,
@@ -292,34 +315,45 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 						>
 							<button
 								ref={saturationRef}
-								className="relative mb-3 h-32 w-48 cursor-crosshair appearance-none border-0 bg-transparent p-0"
+								className="relative h-36 w-full cursor-crosshair appearance-none rounded-md border-0 p-0 ring-1 ring-white/10 ring-inset"
 								style={saturationStyle}
 								type="button"
 								onMouseDown={handleSaturationMouseDown}
 							>
 								<ColorCircle
-									size="sm"
 									position={{ left: `${s * 100}%`, top: `${(1 - v) * 100}%` }}
 									color={`#${value}`}
 								/>
 							</button>
 
-							<button
-								ref={hueRef}
-								className="relative h-4 w-48 cursor-pointer rounded-lg appearance-none border-0 bg-transparent p-0"
-								style={hueStyle}
-								type="button"
-								onMouseDown={handleHueMouseDown}
-							>
-								<ColorCircle
-									size="md"
-									position={{
-										left: `${(displayHue / 360) * 100}%`,
-										top: "50%",
-									}}
-									color={`#${value}`}
-								/>
-							</button>
+							<div className="flex items-center gap-2.5 pr-1.5">
+								{"EyeDropper" in window && (
+									<button
+										className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md"
+										type="button"
+										title={t("Pick color from screen")}
+										aria-label={t("Pick color from screen")}
+										onClick={handleEyeDropper}
+									>
+										<HugeiconsIcon icon={ColorPickerIcon} className="size-4" />
+									</button>
+								)}
+								<button
+									ref={hueRef}
+									className="relative h-3 flex-1 cursor-pointer appearance-none rounded-full border-0 p-0"
+									style={hueStyle}
+									type="button"
+									onMouseDown={handleHueMouseDown}
+								>
+									<ColorCircle
+										position={{
+											left: `${(displayHue / 360) * 100}%`,
+											top: "50%",
+										}}
+										color={`hsl(${displayHue}, 100%, 50%)`}
+									/>
+								</button>
+							</div>
 						</div>,
 						document.body,
 					)}
@@ -330,18 +364,14 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 ColorPicker.displayName = "ColorPicker";
 
 const ColorCircle = ({
-	size,
 	position,
 	color,
 }: {
-	size: "sm" | "md";
 	position: { left: string; top: string };
 	color: string;
 }) => (
 	<div
-		className={`pointer-events-none absolute rounded-full border-3 border-white shadow-lg ${
-			size === "sm" ? "size-3" : "size-4"
-		}`}
+		className="pointer-events-none absolute size-4 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.25),0_2px_4px_rgba(0,0,0,0.4)]"
 		style={{
 			left: position.left,
 			top: position.top,

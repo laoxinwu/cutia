@@ -548,7 +548,7 @@ export function StickerProperties({
 											initialColorRef.current = element.color ?? "#000000";
 										}
 										updateElement({
-											updates: { color: value },
+											updates: { color: `#${value}` },
 											pushHistory: false,
 										});
 									}}
@@ -559,7 +559,7 @@ export function StickerProperties({
 												pushHistory: false,
 											});
 											updateElement({
-												updates: { color: value },
+												updates: { color: `#${value}` },
 												pushHistory: true,
 											});
 											initialColorRef.current = null;
