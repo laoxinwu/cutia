@@ -21,6 +21,7 @@ import {
 	PropertyItemValue,
 } from "./property-item";
 import { useEditor } from "@/hooks/use-editor";
+import { useLocalStorage } from "@/hooks/storage/use-local-storage";
 import { generateAndInsertSpeech } from "@/lib/tts/service";
 import {
 	VOICE_PACKS,
@@ -41,7 +42,10 @@ export function TextSpeechPanel({
 	const { t } = useTranslation();
 	const editor = useEditor();
 	const [selectedVoice, setSelectedVoice] = useState(DEFAULT_VOICE_PACK);
-	const [alignDuration, setAlignDuration] = useState(false);
+	const [alignDuration, setAlignDuration] = useLocalStorage({
+		key: "editor-tts-align-duration",
+		defaultValue: false,
+	});
 	const [isGenerating, setIsGenerating] = useState(false);
 
 	const handleGenerate = async () => {
@@ -139,7 +143,7 @@ export function TextSpeechPanel({
 							id="align-text-duration"
 							checked={alignDuration}
 							onCheckedChange={(checked) =>
-								setAlignDuration(checked === true)
+								setAlignDuration({ value: checked === true })
 							}
 						/>
 						<label
