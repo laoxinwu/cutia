@@ -29,6 +29,7 @@ import type {
 import { transcriptionService } from "@/services/transcription/service";
 import { decodeAudioToFloat32 } from "@/lib/media/audio";
 import { buildCaptionChunks } from "@/lib/transcription/caption";
+import { parseCaptionLines } from "@/lib/transcription/import";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,21 @@ function ProjectCaptions({ projectId }: { projectId: string }) {
 		key: `editor-caption-text:${projectId}`,
 		defaultValue: "",
 	});
+	const [secondaryCaptionText, setSecondaryCaptionText] = useLocalStorage({
+		key: `editor-caption-text-secondary:${projectId}`,
+		defaultValue: "",
+	});
+	const [isEditingSecondary, setIsEditingSecondary] = useState(false);
+	const primaryLineCount = useMemo(
+		() => parseCaptionLines({ text: captionText }).length,
+		[captionText],
+	);
+	const secondaryLineCount = useMemo(
+		() => parseCaptionLines({ text: secondaryCaptionText }).length,
+		[secondaryCaptionText],
+	);
+	const isLineCountMismatched =
+		secondaryLineCount > 0 && secondaryLineCount !== primaryLineCount;
 	const [generateSpeech, setGenerateSpeech] = useLocalStorage({
 		key: `editor-caption-speech:${projectId}`,
 		defaultValue: false,
@@ -181,6 +197,7 @@ function ProjectCaptions({ projectId }: { projectId: string }) {
 		setProcessingStep(t("Importing captions..."));
 		invokeAction("import-captions", {
 			text: captionText,
+			secondaryText: secondaryCaptionText,
 			templateId: selectedTemplate.templateId,
 			generateSpeech,
 			onProgress: (completed, total) => {
@@ -243,18 +260,60 @@ function ProjectCaptions({ projectId }: { projectId: string }) {
 						</TabsTrigger>
 					</TabsList>
 					<TabsContent value="import" className="mt-5 space-y-3">
-						<Label htmlFor="caption-import-text">{t("Subtitles")}</Label>
+						<div className="flex items-center justify-between">
+							<Label htmlFor="caption-import-text">{t("Subtitles")}</Label>
+							<Tabs
+								value={isEditingSecondary ? "secondary" : "primary"}
+								onValueChange={(value) =>
+									setIsEditingSecondary(value === "secondary")
+								}
+							>
+								<TabsList>
+									<TabsTrigger value="primary" className="px-2 py-0.5 text-xs">
+										{t("Primary")}
+									</TabsTrigger>
+									<TabsTrigger
+										value="secondary"
+										className="px-2 py-0.5 text-xs"
+									>
+										{t("Secondary")}
+									</TabsTrigger>
+								</TabsList>
+							</Tabs>
+						</div>
 						<Textarea
 							id="caption-import-text"
 							className="min-h-60"
 							rows={10}
-							placeholder={t("Enter one subtitle per line")}
-							value={captionText}
+							placeholder={
+								isEditingSecondary
+									? t(
+											"Optional second language, matching the primary subtitles line by line",
+										)
+									: t("Enter one subtitle per line")
+							}
+							value={isEditingSecondary ? secondaryCaptionText : captionText}
 							onChange={(event) =>
-								setCaptionText({ value: event.target.value })
+								isEditingSecondary
+									? setSecondaryCaptionText({ value: event.target.value })
+									: setCaptionText({ value: event.target.value })
 							}
 							disabled={isProcessing}
 						/>
+						{secondaryLineCount > 0 && (
+							<p
+								className={
+									isLineCountMismatched
+										? "text-destructive text-xs"
+										: "text-muted-foreground text-xs"
+								}
+							>
+								{t("Primary {{primary}} lines · Secondary {{secondary}} lines", {
+									primary: primaryLineCount,
+									secondary: secondaryLineCount,
+								})}
+							</p>
+						)}
 						<div className="flex items-center gap-2">
 							<Checkbox
 								id="caption-import-speech"
@@ -279,6 +338,9 @@ function ProjectCaptions({ projectId }: { projectId: string }) {
 											seconds: TIMELINE_CONSTANTS.DEFAULT_ELEMENT_DURATION,
 										},
 									)}
+							{generateSpeech &&
+								secondaryLineCount > 0 &&
+								` ${t("Speech is generated from the primary subtitles.")}`}
 						</p>
 					</TabsContent>
 					<TabsContent value="transcription" className="mt-5 space-y-5">

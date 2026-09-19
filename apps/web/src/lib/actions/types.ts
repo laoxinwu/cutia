@@ -12,6 +12,7 @@ export type TActionArgsMap = {
 	"import-captions":
 		| {
 				text: string;
+				secondaryText?: string;
 				templateId: string;
 				generateSpeech: boolean;
 				onProgress?: (completed: number, total: number) => void;

@@ -115,6 +115,48 @@ test("aligns every caption with its speech and undoes the whole import", async (
 	expect(editor.media.getAssets()).toHaveLength(3);
 });
 
+test("pairs secondary lines with primary timing on a smaller track below", async () => {
+	speech.mockImplementation(async ({ text }) => ({
+		duration: text.length,
+		buffer: {} as AudioBuffer,
+		blob: new Blob(["audio"], { type: "audio/mpeg" }),
+	}));
+	await importCaptions({
+		...options(),
+		text: "你好\n再见了",
+		secondaryText: "\nHello\n\nGoodbye\n",
+		generateSpeech: true,
+	});
+	const [primary, secondary, audio] = editor.timeline.getTracks();
+	expect(primary.elements).toMatchObject([
+		{ content: "你好", startTime: 4, duration: 2, fontSize: 5 },
+		{ content: "再见了", startTime: 6, duration: 3, fontSize: 5 },
+	]);
+	expect(secondary.elements).toMatchObject([
+		{ content: "Hello", startTime: 4, duration: 2, fontSize: 4 },
+		{ content: "Goodbye", startTime: 6, duration: 3, fontSize: 4 },
+	]);
+	expect(audio.type).toBe("audio");
+	expect(speech.mock.calls.map(([{ text }]) => text)).toEqual([
+		"你好",
+		"再见了",
+	]);
+	const y = (track: typeof primary) => {
+		const [element] = track.elements;
+		return element.type === "text" ? element.transform.position.y : 0;
+	};
+	expect(y(secondary)).toBeGreaterThan(y(primary));
+	editor.command.undo();
+	expect(editor.timeline.getTracks()).toEqual([]);
+});
+
+test("rejects mismatched primary and secondary line counts", async () => {
+	await expect(
+		importCaptions({ ...options(), secondaryText: "one\ntwo" }),
+	).rejects.toThrow();
+	expect(editor.timeline.getTracks()).toEqual([]);
+});
+
 test("validates all speech lines before generating or changing the timeline", async () => {
 	await expect(
 		importCaptions({ ...options(), text: " \n\r\n" }),
