@@ -3,6 +3,25 @@ import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
 import { getCumulativeHeightBefore, getTrackHeight } from "@/lib/timeline";
 import { useEditor } from "../use-editor";
 
+type ElementRef = { trackId: string; elementId: string };
+
+export function mergeBoxSelection({
+	elements,
+	initialElements,
+}: {
+	elements: ElementRef[];
+	initialElements: ElementRef[];
+}): ElementRef[] {
+	return [
+		...new Map(
+			[...initialElements, ...elements].map((element) => [
+				JSON.stringify([element.trackId, element.elementId]),
+				element,
+			]),
+		).values(),
+	];
+}
+
 interface UseSelectionBoxProps {
 	containerRef: React.RefObject<HTMLElement | null>;
 	onSelectionComplete: (
@@ -101,10 +120,17 @@ export function useSelectionBox({
 		null,
 	);
 	const justFinishedSelectingRef = useRef(false);
+	const initialElementsRef = useRef<ElementRef[]>([]);
 
 	const handleMouseDown = useCallback(
-		({ clientX, clientY }: React.MouseEvent) => {
+		({ clientX, clientY, metaKey, ctrlKey, shiftKey }: React.MouseEvent) => {
 			if (!isEnabled) return;
+
+			// Keep the starting selection fixed while the box grows or shrinks.
+			initialElementsRef.current =
+				metaKey || ctrlKey || shiftKey
+					? [...editor.selection.getSelectedElements()]
+					: [];
 
 			setSelectionBox({
 				startPos: { x: clientX, y: clientY },
@@ -112,7 +138,7 @@ export function useSelectionBox({
 				isActive: false,
 			});
 		},
-		[isEnabled],
+		[editor, isEnabled],
 	);
 
 	const selectElementsInBox = useCallback(
@@ -174,9 +200,21 @@ export function useSelectionBox({
 					}
 				}
 			}
-			onSelectionComplete(selectedElements);
+			onSelectionComplete(
+				mergeBoxSelection({
+					elements: selectedElements,
+					initialElements: initialElementsRef.current,
+				}),
+			);
 		},
-		[containerRef, headerRef, onSelectionComplete, tracks, tracksScrollRef, zoomLevel],
+		[
+			containerRef,
+			headerRef,
+			onSelectionComplete,
+			tracks,
+			tracksScrollRef,
+			zoomLevel,
+		],
 	);
 
 	useEffect(() => {
