@@ -103,7 +103,7 @@ test("export audio follows video speed and direction", async () => {
 		length: sourceSamples.length,
 		sampleRate: 4,
 		getChannelData: () => sourceSamples,
-	} as AudioBuffer;
+	} as unknown as AudioBuffer;
 	const audioContext = {
 		decodeAudioData: async () => sourceBuffer,
 		createBuffer: () =>
@@ -113,7 +113,7 @@ test("export audio follows video speed and direction", async () => {
 				sampleRate: 4,
 				getChannelData: (channel: number) => outputChannels[channel],
 			}) as AudioBuffer,
-	} as AudioContext;
+	} as unknown as AudioContext;
 	const mediaAsset = {
 		id: "video-media",
 		name: "Video",

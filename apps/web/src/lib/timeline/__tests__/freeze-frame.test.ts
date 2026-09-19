@@ -34,8 +34,6 @@ const imageAsset = (id: string): MediaAsset => ({
 	name: `${id}.png`,
 	type: "image",
 	file: new File([id], `${id}.png`, { type: "image/png" }),
-	size: id.length,
-	lastModified: 0,
 });
 
 describe("freeze frame timeline decisions", () => {
