@@ -39,10 +39,28 @@ import { invokeAction } from "@/lib/actions";
 import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
 
 export function Captions() {
+	const editor = useEditor();
+	const projectId = editor.project.getActiveOrNull()?.metadata.id;
+
+	return projectId ? (
+		<ProjectCaptions key={projectId} projectId={projectId} />
+	) : null;
+}
+
+function ProjectCaptions({ projectId }: { projectId: string }) {
 	const { t } = useTranslation();
-	const [activeTab, setActiveTab] = useState("transcription");
-	const [captionText, setCaptionText] = useState("");
-	const [generateSpeech, setGenerateSpeech] = useState(false);
+	const [activeTab, setActiveTab] = useLocalStorage({
+		key: `editor-caption-tab:${projectId}`,
+		defaultValue: "transcription",
+	});
+	const [captionText, setCaptionText] = useLocalStorage({
+		key: `editor-caption-text:${projectId}`,
+		defaultValue: "",
+	});
+	const [generateSpeech, setGenerateSpeech] = useLocalStorage({
+		key: `editor-caption-speech:${projectId}`,
+		defaultValue: false,
+	});
 	const [selectedLanguage, setSelectedLanguage] =
 		useLocalStorage<TranscriptionLanguage>({
 			key: "editor-caption-language",
@@ -212,7 +230,7 @@ export function Captions() {
 				<Tabs
 					value={activeTab}
 					onValueChange={(value) => {
-						setActiveTab(value);
+						setActiveTab({ value });
 						setError(null);
 					}}
 				>
@@ -232,7 +250,9 @@ export function Captions() {
 							rows={10}
 							placeholder={t("Enter one subtitle per line")}
 							value={captionText}
-							onChange={(event) => setCaptionText(event.target.value)}
+							onChange={(event) =>
+								setCaptionText({ value: event.target.value })
+							}
 							disabled={isProcessing}
 						/>
 						<div className="flex items-center gap-2">
@@ -240,7 +260,7 @@ export function Captions() {
 								id="caption-import-speech"
 								checked={generateSpeech}
 								onCheckedChange={(checked) =>
-									setGenerateSpeech(checked === true)
+									setGenerateSpeech({ value: checked === true })
 								}
 								disabled={isProcessing}
 							/>
