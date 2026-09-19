@@ -10,8 +10,10 @@ import type {
 	ElementType,
 } from "@/types/timeline";
 import type { MediaAsset } from "@/types/assets";
-import { FONT_SIZE_SCALE_REFERENCE } from "@/constants/text-constants";
-import { isBottomAlignedSubtitleText } from "@/lib/timeline/text-utils";
+import {
+	getElementHalfSize,
+	getElementCenterInCanvas,
+} from "@/lib/preview/element-bounds";
 
 type ScaleHandle = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type ResizeHandle = "left" | "right";
@@ -109,50 +111,30 @@ function computeTextBounds({
 	canvasWidth: number;
 	canvasHeight: number;
 	displayScale: number;
-}): ElementBounds {
-	const scaleFactor = canvasHeight / FONT_SIZE_SCALE_REFERENCE;
-	const scaledFontSize = element.fontSize * scaleFactor;
+}): ElementBounds | null {
+	// same box hit-testing and snapping use, so the outline is what you can click
+	const halfSize = getElementHalfSize({
+		element,
+		transform: element.transform,
+		mediaMap: new Map(),
+		canvasWidth,
+		canvasHeight,
+	});
+	if (!halfSize) return null;
 
-	const elementBoxWidth = element.boxWidth;
-	const hasBoxWidth =
-		elementBoxWidth !== undefined && elementBoxWidth > 0;
-	const scaledBoxWidth = hasBoxWidth ? elementBoxWidth * scaleFactor : 0;
-
-	let estimatedWidth: number;
-	let estimatedHeight: number;
-	const elementScale = element.transform.scale;
-
-	if (hasBoxWidth) {
-		estimatedWidth = scaledBoxWidth;
-		const lineHeight = scaledFontSize * 1.3;
-		const charsPerLine = Math.max(
-			1,
-			Math.floor(scaledBoxWidth / (scaledFontSize * 0.6)),
-		);
-		const lineCount = Math.max(
-			1,
-			Math.ceil(element.content.length / charsPerLine),
-		);
-		estimatedHeight = lineCount * lineHeight;
-	} else {
-		estimatedWidth = element.content.length * scaledFontSize * 0.6;
-		estimatedHeight = scaledFontSize * 1.4;
-	}
-
-	const centerX = canvasWidth / 2 + element.transform.position.x;
-	const baseY = canvasHeight / 2 + element.transform.position.y;
-	const isBottomAligned = isBottomAlignedSubtitleText({ element });
-	const scaledEstimatedWidth = estimatedWidth * elementScale;
-	const scaledEstimatedHeight = estimatedHeight * elementScale;
-	const topY = isBottomAligned
-		? baseY - scaledEstimatedHeight
-		: baseY - scaledEstimatedHeight / 2;
+	const center = getElementCenterInCanvas({
+		element,
+		transform: element.transform,
+		canvasWidth,
+		canvasHeight,
+		halfSize,
+	});
 
 	return {
-		left: (centerX - scaledEstimatedWidth / 2) * displayScale,
-		top: topY * displayScale,
-		width: scaledEstimatedWidth * displayScale,
-		height: scaledEstimatedHeight * displayScale,
+		left: (center.x - halfSize.halfWidth) * displayScale,
+		top: (center.y - halfSize.halfHeight) * displayScale,
+		width: halfSize.halfWidth * 2 * displayScale,
+		height: halfSize.halfHeight * 2 * displayScale,
 		rotate: element.transform.rotate,
 	};
 }

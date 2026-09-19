@@ -1,12 +1,47 @@
-import type { TimelineElement, Transform } from "@/types/timeline";
+import type {
+	TextElement,
+	TimelineElement,
+	Transform,
+} from "@/types/timeline";
 import type { MediaAsset } from "@/types/assets";
 import type { TCanvasSize } from "@/types/project";
 import { FONT_SIZE_SCALE_REFERENCE } from "@/constants/text-constants";
 import { isBottomAlignedSubtitleText } from "@/lib/timeline/text-utils";
+import { getTextFont, wrapText } from "@/services/renderer/nodes/text-node";
 
 export interface ElementHalfSize {
 	halfWidth: number;
 	halfHeight: number;
+}
+
+let measureContext: CanvasRenderingContext2D | null = null;
+
+// glyph widths vary too much across scripts (CJK ~1em, latin ~0.5em) to guess,
+// so measure with the exact font the renderer draws with
+function getTextMeasureContext({
+	element,
+	scaledFontSize,
+}: {
+	element: TextElement;
+	scaledFontSize: number;
+}): CanvasRenderingContext2D | null {
+	measureContext ??= document.createElement("canvas").getContext("2d");
+	if (measureContext) {
+		measureContext.font = getTextFont({ element, scaledFontSize });
+	}
+	return measureContext;
+}
+
+/** Unwrapped width of the text in canvas pixels, before transform.scale. */
+export function measureTextWidth({
+	element,
+	scaledFontSize,
+}: {
+	element: TextElement;
+	scaledFontSize: number;
+}): number {
+	const context = getTextMeasureContext({ element, scaledFontSize });
+	return context?.measureText(element.content).width ?? 0;
 }
 
 export function getElementHalfSize({
@@ -48,16 +83,16 @@ export function getElementHalfSize({
 			elementBoxWidth !== undefined && elementBoxWidth > 0;
 
 		if (hasBoxWidth) {
+			const context = getTextMeasureContext({ element, scaledFontSize });
+			if (!context) return null;
+
 			const scaledBoxWidth = elementBoxWidth * scaleFactor;
 			const lineHeight = scaledFontSize * 1.3;
-			const charsPerLine = Math.max(
-				1,
-				Math.floor(scaledBoxWidth / (scaledFontSize * 0.6)),
-			);
-			const lineCount = Math.max(
-				1,
-				Math.ceil(element.content.length / charsPerLine),
-			);
+			const lineCount = wrapText({
+				context,
+				text: element.content,
+				maxWidth: scaledBoxWidth,
+			}).length;
 			return {
 				halfWidth: (scaledBoxWidth * elementScale) / 2,
 				halfHeight: ((lineCount * lineHeight) * elementScale) / 2,
@@ -66,7 +101,7 @@ export function getElementHalfSize({
 
 		return {
 			halfWidth:
-				(element.content.length * scaledFontSize * 0.6 * elementScale) / 2,
+				(measureTextWidth({ element, scaledFontSize }) * elementScale) / 2,
 			halfHeight: ((scaledFontSize * 1.4) * elementScale) / 2,
 		};
 	}

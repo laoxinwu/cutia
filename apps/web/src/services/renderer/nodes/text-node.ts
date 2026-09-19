@@ -27,7 +27,19 @@ export function scaleBoxWidth({
 	return boxWidth * (canvasHeight / FONT_SIZE_SCALE_REFERENCE);
 }
 
-function wrapText({
+export function getTextFont({
+	element,
+	scaledFontSize,
+}: {
+	element: Pick<TextElement, "fontWeight" | "fontStyle" | "fontFamily">;
+	scaledFontSize: number;
+}): string {
+	const fontWeight = element.fontWeight === "bold" ? "bold" : "normal";
+	const fontStyle = element.fontStyle === "italic" ? "italic" : "normal";
+	return `${fontStyle} ${fontWeight} ${scaledFontSize}px ${element.fontFamily}`;
+}
+
+export function wrapText({
 	context,
 	text,
 	maxWidth,
@@ -103,14 +115,15 @@ export class TextNode extends BaseNode<TextNodeParams> {
 			);
 		}
 
-		const fontWeight = this.params.fontWeight === "bold" ? "bold" : "normal";
-		const fontStyle = this.params.fontStyle === "italic" ? "italic" : "normal";
 		const textBaseline = this.params.textBaseline || "middle";
 		const scaledFontSize = scaleFontSize({
 			fontSize: this.params.fontSize,
 			canvasHeight: this.params.canvasHeight,
 		});
-		renderer.context.font = `${fontStyle} ${fontWeight} ${scaledFontSize}px ${this.params.fontFamily}`;
+		renderer.context.font = getTextFont({
+			element: this.params,
+			scaledFontSize,
+		});
 		renderer.context.textAlign = this.params.textAlign;
 		renderer.context.textBaseline = textBaseline;
 		renderer.context.fillStyle = this.params.color;

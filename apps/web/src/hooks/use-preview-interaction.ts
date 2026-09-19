@@ -11,6 +11,7 @@ import { FONT_SIZE_SCALE_REFERENCE } from "@/constants/text-constants";
 import {
 	getElementHalfSize,
 	getElementCenterInCanvas,
+	measureTextWidth,
 	type ElementHalfSize,
 } from "@/lib/preview/element-bounds";
 import { computePreviewSnap, type SnapGuide } from "@/lib/preview/snap";
@@ -290,7 +291,10 @@ export function usePreviewInteraction({
 			const initialBoxWidth =
 				textElement.boxWidth && textElement.boxWidth > 0
 					? textElement.boxWidth
-					: textElement.content.length * textElement.fontSize * 0.6;
+					: measureTextWidth({
+							element: textElement,
+							scaledFontSize: textElement.fontSize * scaleFactor,
+						}) / scaleFactor;
 
 			resizeStateRef.current = {
 				startX: startPos.x,
